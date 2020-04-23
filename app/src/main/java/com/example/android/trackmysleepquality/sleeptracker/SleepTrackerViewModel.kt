@@ -34,62 +34,72 @@ class SleepTrackerViewModel(
     private var viewModelJob = Job()
     private var uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
     private val nights = database.getAllNights()
-    val nightString = Transformations.map(nights)   { nights ->
+    val nightString = Transformations.map(nights) { nights ->
         formatNights(nights, application.resources)
     }
     private var tonight = MutableLiveData<SleepNight?>()
+
     init {
         initializeTonight()
     }
+
     private fun initializeTonight() {
-        uiScope.launch  {
+        uiScope.launch {
             tonight.value = getTonightFromDatabase()
         }
     }
-    private suspend fun getTonightFromDatabase(): SleepNight?   {
-        return withContext(Dispatchers.IO)  {
+
+    private suspend fun getTonightFromDatabase(): SleepNight? {
+        return withContext(Dispatchers.IO) {
             var night = database.getTonight()
-            if (night?.endTimeMilli != night?.startTimeMilli)   {
+            if (night?.endTimeMilli != night?.startTimeMilli) {
                 night = null
             }
             night
         }
     }
-    fun onStartTracking()   {
+
+    fun onStartTracking() {
         uiScope.launch {
             val newNight = SleepNight()
             insert(newNight)
             tonight.value = getTonightFromDatabase()
         }
     }
-    private suspend fun insert(night: SleepNight)    {
+
+    private suspend fun insert(night: SleepNight) {
         withContext(Dispatchers.IO) {
             database.insert(night)
         }
     }
-    fun onStopTracking()    {
+
+    fun onStopTracking() {
         uiScope.launch {
             val oldNight = tonight.value ?: return@launch
             oldNight.endTimeMilli = System.currentTimeMillis()
             update(oldNight)
         }
     }
-    private suspend fun update(night: SleepNight)   {
+
+    private suspend fun update(night: SleepNight) {
         withContext(Dispatchers.IO) {
             database.update(night)
         }
     }
-    fun onClear()   {
+
+    fun onClear() {
         uiScope.launch {
             clear()
             tonight.value = null
         }
     }
+
     private suspend fun clear() {
         withContext(Dispatchers.IO) {
             database.clear()
         }
     }
+
     override fun onCleared() {
         super.onCleared()
         viewModelJob.cancel()
