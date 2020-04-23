@@ -79,6 +79,17 @@ class SleepTrackerViewModel(
             database.update(night)
         }
     }
+    fun onClear()   {
+        uiScope.launch {
+            clear()
+            tonight.value = null
+        }
+    }
+    private suspend fun clear() {
+        withContext(Dispatchers.IO) {
+            database.clear()
+        }
+    }
     override fun onCleared() {
         super.onCleared()
         viewModelJob.cancel()
